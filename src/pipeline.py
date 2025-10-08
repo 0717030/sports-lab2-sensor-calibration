@@ -46,6 +46,7 @@ def run(cfg: PipelineConfig) -> Dict[str, Any]:
         )
 
     # ✅ 只輸出作業需要的圖
+    viz.save_before_plots(outdir, df)
     viz.save_required_plots(outdir, df, a_world, v_world, x_world, gyro_dps, gyro_angle_deg)
     viz.save_action_plots(outdir, cfg.action, df, fs, ori, a_world, v_world, x_world)
 

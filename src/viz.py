@@ -88,3 +88,40 @@ def _square(outdir, df, fs, ori, a_world, v_world, x_world):
     plt.axis('equal'); plt.title("Planar Path (X vs Y)")
     plt.xlabel("X [m]"); plt.ylabel("Y [m]")
     _savefig(outdir, "square_xy")
+
+def save_before_plots(outdir, df):
+    """
+    Draw raw (pre-calibration) XYZ in one figure each (x=red, y=green, z=blue),
+    and integrate naively to get v/x. Also plot raw gyro ω/θ.
+    """
+    import matplotlib.pyplot as plt
+    from src.core import integrate_naive, gyro_tracks_raw
+    t = df["t_sec"].to_numpy()
+
+    # --- raw accelerometer in body frame ---
+    a_raw = df[["acc_x","acc_y","acc_z"]].to_numpy()
+
+    def plot_xyz(t, arr, title, ylabel, filename):
+        plt.figure(figsize=(12,6))
+        plt.plot(t, arr[:,0], label="x", color="red")
+        plt.plot(t, arr[:,1], label="y", color="green")
+        plt.plot(t, arr[:,2], label="z", color="blue")
+        plt.title(title)
+        plt.xlabel("t (sec)")
+        plt.ylabel(ylabel)
+        plt.legend(loc="best")
+        plt.grid(True, alpha=0.25)
+        _savefig(outdir, filename)
+
+    # A-T (raw, body frame)
+    plot_xyz(t, a_raw, "Accelerometer (raw, body frame)", "a (m/s²)", "acc_before_body")
+
+    # V-T & X-T from raw (naive integration)
+    v_raw, x_raw = integrate_naive(t, a_raw)
+    plot_xyz(t, v_raw, "Velocity (raw, naive integration, body frame)", "v (m/s)", "vel_before_body")
+    plot_xyz(t, x_raw, "Displacement (raw, naive integration, body frame)", "x (m)", "pos_before_body")
+
+    # Gyro (raw)
+    gyro_dps_raw, gyro_ang_deg_raw = gyro_tracks_raw(df)
+    plot_xyz(t, gyro_dps_raw, "Gyroscope Angular Velocity (raw)", "ω (deg/s)", "gyro_VT_before_deg_per_s")
+    plot_xyz(t, gyro_ang_deg_raw, "Gyroscope Angle (raw, integrated)", "θ (deg)", "gyro_XT_before_deg")

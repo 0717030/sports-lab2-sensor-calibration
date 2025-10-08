@@ -209,3 +209,30 @@ def gyro_tracks(df: pd.DataFrame, biases):
         ang[i] = ang[i-1] + 0.5*(w[i]+w[i-1])*dt
     ang_deg = np.rad2deg(ang)
     return w_dps, ang_deg
+
+
+# ======== NEW: naive integrations on raw CSV data (no bias, no ZUPT, no detrend) ========
+
+def integrate_naive(t: np.ndarray, a: np.ndarray):
+    """Trapezoidal integrate acceleration -> velocity -> position (no ZUPT, no detrend)."""
+    v = np.zeros_like(a)
+    for i in range(1, len(t)):
+        dt = t[i] - t[i-1]
+        v[i] = v[i-1] + 0.5 * (a[i] + a[i-1]) * dt
+    x = np.zeros_like(v)
+    for i in range(1, len(t)):
+        dt = t[i] - t[i-1]
+        x[i] = x[i-1] + 0.5 * (v[i] + v[i-1]) * dt
+    return v, x
+
+def gyro_tracks_raw(df: pd.DataFrame):
+    """Angular velocity [deg/s] & integrated angle [deg] directly from CSV (no bias removal)."""
+    t = df["t_sec"].to_numpy()
+    w = df[["gyro_x","gyro_y","gyro_z"]].to_numpy()  # rad/s (as in CSV)
+    w_dps = np.rad2deg(w)
+    ang = np.zeros_like(w)
+    for i in range(1, len(t)):
+        dt = t[i] - t[i-1]
+        ang[i] = ang[i-1] + 0.5 * (w[i] + w[i-1]) * dt
+    ang_deg = np.rad2deg(ang)
+    return w_dps, ang_deg
