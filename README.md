@@ -23,12 +23,16 @@
     results/
       ├─ pendulum/
       │    ├─ acc_after_world.png, vel_after_world.png, pos_after_world.png
+      │    ├─ acc_before_body.png, vel_before_body.png, pos_before_body.png      
       │    ├─ gyro_VT_deg_per_s.png, gyro_XT_deg.png
+      │    ├─ gyro_VT_before_deg_per_s.png, gyro_XT_before_deg.png
       │    ├─ pendulum_yaw.png
       │    └─ manifest.json
       └─ elevator/
            ├─ acc_after_world.png, vel_after_world.png, pos_after_world.png
+           ├─ acc_after_world.png, vel_after_world.png, pos_after_world.png
            ├─ gyro_VT_deg_per_s.png, gyro_XT_deg.png
+           ├─ gyro_VT_before_deg_per_s.png, gyro_XT_before_deg.png
            ├─ elevator_Az.png, elevator_Vz.png, elevator_Z.png
            └─ manifest.json
 
