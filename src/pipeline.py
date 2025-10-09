@@ -73,6 +73,48 @@ def run(cfg: PipelineConfig) -> Dict[str, Any]:
     ori = core.estimate_orientation(df, fs, biases, alpha=cfg.alpha, use_mag=cfg.use_mag)
     a_world = core.to_world_linear_acc(df, ori, biases)
 
+    # pipeline.py 中 run() 內，拿到 a_world 之後
+    t = df["t_sec"].to_numpy()
+    if cfg.action == "elevator":
+        fs = 1.0 / np.median(np.diff(t)[np.diff(t) > 0])
+
+        # 1) 以世界座標加速度判斷「正在移動」
+        az = a_world[:, 2]
+        axy = np.linalg.norm(a_world[:, :2], axis=1)
+        az_th  = 0.08   # 0.05~0.12 m/s^2 視噪聲調
+        axy_th = 0.08
+        moving = (np.abs(az) > az_th) | (axy > axy_th)
+
+        # 2) 形態學膨脹，擴展加減速脈衝把整段乘梯覆蓋掉
+        # 視你的電梯一趟時間，3~5 秒通常可把等速段也吃進「moving」
+        grow_sec = 3.0
+        k = max(1, int(grow_sec * fs))
+        kernel = np.ones(k, dtype=int)
+        from numpy.lib.stride_tricks import sliding_window_view as swv
+        if len(moving) >= k:
+            mv = swv(moving.astype(int), k).max(axis=1)  # max-pool 當作 dilation
+            moving_dil = np.pad(mv, (k//2, k - 1 - k//2), mode="edge").astype(bool)
+        else:
+            moving_dil = moving
+
+        # 3) 反相就是「候選靜止」，再套最小長度
+        candidate = ~moving_dil
+        min_len = int(max(cfg.min_stationary_sec, 0.8) * fs)  # 電梯停留通常>0.8s
+        stationary_mask = np.zeros_like(candidate)
+        i = 0
+        n = len(candidate)
+        while i < n:
+            if candidate[i]:
+                j = i
+                while j < n and candidate[j]:
+                    j += 1
+                if (j - i) >= min_len:
+                    stationary_mask[i:j] = True
+                i = j
+            else:
+                i += 1
+
+    
     # ===== Integration mode selection =====
     integ_mode = "elevator" if cfg.action == "elevator" else "default"
     v_world, x_world = core.integrate_velocity_position(
