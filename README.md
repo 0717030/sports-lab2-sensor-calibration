@@ -14,10 +14,14 @@
 ### 使用方式
 0. 先靜止幾秒再錄指定動作，輸出 CSV
 1. 把 CSV 放在 data/，檔名要包含 pendulum 或 elevator 以自動判斷動作
-2. **多動作一起處理** 
-    `python -m src.main --data-dir data --out-root results`
-   **指定動作** 
-   `python -m src.main --csv data/pendulum.csv --action pendulum --out-root results`
+2. **多動作一起處理** (沒有加上磁力計約束 + 預設的加速度校正參數)   
+    `python -m src.main --data-dir data --out-root results`  <br><br>
+   **指定動作**     
+   * 沒有加上磁力計約束 + 預設的加速度校正參數  
+    `python -m src.main --csv data/pendulum.csv --action pendulum --out-root results`  
+    * 加上磁力計約束 + 稍強的加速度校正  
+    `python -m src.main --csv data/xxx.csv --action elevator --use_mag --alpha 0.08`
+
 3. 輸出會到：
     ```
     results/
