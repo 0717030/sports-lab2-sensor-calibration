@@ -1,4 +1,4 @@
-
+# src/viz.py (pendulum-enhanced)
 from typing import Callable, Dict
 import numpy as np
 import matplotlib.pyplot as plt
@@ -55,7 +55,7 @@ def _pendulum(outdir, df, fs, ori, a_world, v_world, x_world):
 
     # 自動偵測主要擺動軸
     var3 = a_world.var(axis=0)
-    main_axis = int(np.argmax(var3))
+    main_axis = np.argmax(var3)
     axis_name = ["x", "y", "z"][main_axis]
 
     # 畫 pitch 而非 yaw
@@ -79,35 +79,17 @@ def _pendulum(outdir, df, fs, ori, a_world, v_world, x_world):
 
 
 # ====================================================
-# 🚇 Elevator: show all axes + z emphasis
+# Elevator & square unchanged
 # ====================================================
 @register("elevator")
 def _elevator(outdir, df, fs, ori, a_world, v_world, x_world):
     t = df["t_sec"].to_numpy()
-
-    def plot_xyz(t, arr, title, ylabel, filename):
-        plt.figure(figsize=(12,4))
-        plt.plot(t, arr[:,0], label="x", color="red", alpha=0.7)
-        plt.plot(t, arr[:,1], label="y", color="green", alpha=0.7)
-        plt.plot(t, arr[:,2], label="z", color="blue", linewidth=2.0)
-        plt.title(title); plt.xlabel("Time [s]"); plt.ylabel(ylabel)
-        plt.legend(loc="best"); plt.grid(True, alpha=0.25); _savefig(outdir, filename)
-
-    plot_xyz(t, a_world, "Elevator Acceleration (world)", "a (m/s²)", "elevator_acc_world")
-    plot_xyz(t, v_world, "Elevator Velocity (world)", "v (m/s)", "elevator_vel_world")
-    plot_xyz(t, x_world, "Elevator Displacement (world)", "x (m)", "elevator_pos_world")
-
-    # 專注 z 軸（期望：平台速度、線性位移）
-    for name, arr, ylabel in [
-        ("Az", a_world[:,2], "a_z (m/s²)"),
-        ("Vz", v_world[:,2], "v_z (m/s)"),
-        ("Z",  x_world[:,2], "z (m)"),
-    ]:
-        plt.figure(figsize=(12,3.5))
-        plt.plot(t, arr)
-        plt.title(f"Elevator {name}"); plt.xlabel("Time [s]"); plt.ylabel(ylabel)
-        plt.grid(True, alpha=0.25); _savefig(outdir, f"elevator_{name}")
-
+    plt.figure(figsize=(10,4)); plt.plot(t, a_world[:,2]); plt.title("Elevator A_z [m/s^2]"); plt.xlabel("Time [s]")
+    _savefig(outdir, "elevator_Az")
+    plt.figure(figsize=(10,4)); plt.plot(t, v_world[:,2]); plt.title("Elevator V_z [m/s]"); plt.xlabel("Time [s]")
+    _savefig(outdir, "elevator_Vz")
+    plt.figure(figsize=(10,4)); plt.plot(t, x_world[:,2]); plt.title("Elevator Z [m]"); plt.xlabel("Time [s]")
+    _savefig(outdir, "elevator_Z")
 
 @register("square")
 def _square(outdir, df, fs, ori, a_world, v_world, x_world):

@@ -1,4 +1,4 @@
-
+# src/pipeline.py (pendulum-enhanced version)
 from dataclasses import dataclass
 from typing import Dict, Any
 import numpy as np
@@ -19,7 +19,8 @@ class PipelineConfig:
 
 
 def _estimate_biases_strong(df, fs):
-    """Use only first 3s, auto-find most stable 1s window (for pendulum)."""
+    """Use only first 3s, auto-find most stable 1s window."""
+    import pandas as pd
     gyro = df[["gyro_x", "gyro_y", "gyro_z"]].to_numpy()
     t = df["t_sec"].to_numpy()
     mask3s = t <= 3.0
@@ -59,7 +60,7 @@ def run(cfg: PipelineConfig) -> Dict[str, Any]:
     df, fs = io_mod.load_csv(cfg.csv)
     outdir = io_mod.ensure_outdir(cfg.out)
 
-    # Bias estimation
+    # ===== Specialized pendulum bias estimation =====
     if cfg.action == "pendulum":
         biases, stationary_mask = _estimate_biases_strong(df, fs)
     else:
@@ -69,16 +70,9 @@ def run(cfg: PipelineConfig) -> Dict[str, Any]:
             min_stationary_sec=cfg.min_stationary_sec
         )
 
-    # Orientation & world-frame linear accel
     ori = core.estimate_orientation(df, fs, biases, alpha=cfg.alpha, use_mag=cfg.use_mag)
     a_world = core.to_world_linear_acc(df, ori, biases)
-
-    # ===== Integration mode selection =====
-    integ_mode = "elevator" if cfg.action == "elevator" else "default"
-    v_world, x_world = core.integrate_velocity_position(
-        df["t_sec"].to_numpy(), a_world, stationary_mask, mode=integ_mode
-    )
-
+    v_world, x_world = core.integrate_velocity_position(df["t_sec"].to_numpy(), a_world, stationary_mask)
     gyro_dps, gyro_angle_deg = core.gyro_tracks(df, biases)
 
     if cfg.export_calibrated_csv:

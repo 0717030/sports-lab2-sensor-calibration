@@ -1,4 +1,4 @@
-
+# src/core.py
 import numpy as np
 import pandas as pd
 
@@ -146,12 +146,10 @@ def to_world_linear_acc(df: pd.DataFrame, ori, biases):
     a_lin = a_w - G
     return a_lin
 
-def integrate_velocity_position(t: np.ndarray, a: np.ndarray, stationary_mask: np.ndarray, mode: str = "default"):
-    """Integrate accel->vel->pos with ZUPT.
-    mode="default": original behavior (per-segment linear detrend on v and x).
-    mode="elevator": ZUPT only (no detrend), to preserve constant-velocity plateaus.
-    """
-    # integrate acceleration to velocity (trapezoid), apply ZUPT
+def integrate_velocity_position(t: np.ndarray, a: np.ndarray, stationary_mask: np.ndarray):
+    """Generic integrator: a can be body-frame (uncorrected) or world-frame (corrected).
+       Applies ZUPT on stationary_mask and per-segment linear detrend."""
+    # integrate acceleration to velocity
     v = np.zeros_like(a)
     for i in range(1, len(t)):
         dt = t[i]-t[i-1]
@@ -159,17 +157,7 @@ def integrate_velocity_position(t: np.ndarray, a: np.ndarray, stationary_mask: n
         if stationary_mask[i]:
             v[i] = 0.0
 
-    if mode == "elevator":
-        # No detrend: keep constant-velocity segments intact
-        v_corr = v
-        # integrate to position directly
-        x = np.zeros_like(v_corr)
-        for k in range(1, len(t)):
-            dt = t[k]-t[k-1]
-            x[k] = x[k-1] + 0.5*(v_corr[k]+v_corr[k-1])*dt
-        return v_corr, x
-
-    # ===== default: linear detrend per moving segment on velocity =====
+    # linear detrend per moving segment
     v_dc = v.copy()
     n = len(t); i = 0
     while i < n:
